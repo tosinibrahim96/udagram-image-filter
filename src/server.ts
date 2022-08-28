@@ -30,27 +30,41 @@ import { filterImageFromURL, deleteLocalFiles } from "./util/util";
 
   //! END @TODO1
 
-  // Root Endpoint
-  // Displays a simple message to the user
-  app.get("/", async (req, res) => {
+  /**
+   * Root Endpoint
+   * Displays a simple message to the user
+   *
+   * */
+  app.get("/", async (req: Request, res: Response) => {
     res.send("try GET /filteredimage?image_url={{}}");
   });
 
+  /**
+   * Filter image endpoint
+   * Filters an image using the provided util function
+   * Not that the image is deleted immediately after 
+   * the response is sent to the client
+   * 
+   * */
   app.get("/filteredimage", async (req: Request, res: Response) => {
-    let imageUrl = req.query.image_url;
+    try {
+      const imageUrl: string = req.query.image_url;
 
-    if (!imageUrl) {
-      res.status(422).send("Image URL is required");
+      if (!imageUrl) {
+        res.status(422).send("Image URL is required");
+      }
+
+      const filteredImage: string = await filterImageFromURL(imageUrl);
+
+      res.status(200).sendFile(filteredImage, () => {
+        deleteLocalFiles([filteredImage]);
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("Could not process provided image");
     }
-
-    const filteredImage = await filterImageFromURL(imageUrl);
-
-    res.status(200).sendFile(filteredImage, () => {
-      deleteLocalFiles([filteredImage]);
-    });
   });
 
-  
   // Start the Server
   app.listen(port, () => {
     console.log(`server running http://localhost:${port}`);
